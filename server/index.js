@@ -2,45 +2,29 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const port = 3042;
+
 const secp = require("ethereum-cryptography/secp256k1");
 const { keccak256 } = require("ethereum-cryptography/keccak");
-const { utf8ToBytes } = require("ethereum-cryptography/utils");
 
-function hashMessage(message) {
-    const bytes = utf8ToBytes(message)
-    const hash = keccak256(bytes)
-
-    return hash
-}
-
-
-
-async function recoverKey(message, signature, recoveryBit) {
-    const hash = hashMessage(message)
-    const pubKey = await secp.recoverPublicKey(hash, signature, recoveryBit)
-
-    return pubKey
-}
-
-app.use(cors()); // is used to enable Cross-Origin Resource Sharing for the Express application. This means that the server will be able to receive requests from different domains and allow access to the resources accordingly. Without CORS, browsers may block requests to the server, making it difficult for clients to interact with the server's resources.
-app.use(express.json()); // is used to parse JSON bodies from requests. This is used to parse the request body sent by the client.
+app.use(cors());
+app.use(express.json());
 
 const balances = {
-  "0x1": 100,
-  "0x2": 50,
-  "0x3": 75,
+  "dc5e384ea5b03dac650fd87ca60efce6fde1e300": 100,
+  "36d068f3933a7bd318b724ea1977589f7b70bf39": 50,
+  "76c90c852c0dfc102a9ae958afa46f660b01ae08": 75,
 };
 
-// GET /balance/:address
 app.get("/balance/:address", (req, res) => {
   const { address } = req.params;
   const balance = balances[address] || 0;
   res.send({ balance });
 });
 
-// POST /send
-app.post("/send", (req, res) => {
-  const { sender, recipient, amount } = req.body;
+app.post("/send", async (req, res) => {
+  const { signature, recoveryBit, hashedMessage, recipient, amount } = req.body;
+  const publicKey = await secp.recoverPublicKey(hashedMessage, signature, recoveryBit);
+  const sender = getAddress(publicKey);
 
   setInitialBalance(sender);
   setInitialBalance(recipient);
@@ -54,7 +38,6 @@ app.post("/send", (req, res) => {
   }
 });
 
-
 app.listen(port, () => {
   console.log(`Listening on port ${port}!`);
 });
@@ -63,4 +46,10 @@ function setInitialBalance(address) {
   if (!balances[address]) {
     balances[address] = 0;
   }
+}
+
+function getAddress(publicKey) {
+  const slicedPublicKey = publicKey.slice(1);
+  const hash = keccak256(slicedPublicKey);
+  return hash.slice(-20);
 }
