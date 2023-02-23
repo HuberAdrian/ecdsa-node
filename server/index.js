@@ -10,9 +10,10 @@ app.use(cors());
 app.use(express.json());
 
 const balances = {
-  "dc5e384ea5b03dac650fd87ca60efce6fde1e300": 100,
-  "36d068f3933a7bd318b724ea1977589f7b70bf39": 50,
-  "76c90c852c0dfc102a9ae958afa46f660b01ae08": 75,
+  // addresses are the last 20 bytes of the keccak256 hash of the public key:
+  "9ad0c7c8b2afbd91467f717cbc0ef1c57e85c4f2": 100, // privKey: 95b8d3f8890b1d51447175e8358c631224ddba5240472f071724f2ef7458318e
+  "0fed504fed5b124060daa9e7ec36f2afe3aae02a": 50, // privKey: 0875998487bad7dae4b8edb1ba17b96a0b55fe9f82b03c92fbfc9e14e4df6edba
+  "5cf18103207ebd3796dba844c74b41a87993d1c6": 75, // privKey: e533aa0231cc6ccc906a8875975987535f31b364dc2e6687a9a515a1f8da28fb
 };
 
 app.get("/balance/:address", (req, res) => {
