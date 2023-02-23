@@ -4,41 +4,35 @@ import { keccak256 } from "ethereum-cryptography/keccak";
 import { utf8ToBytes } from "ethereum-cryptography/utils";
 import secp from "ethereum-cryptography/secp256k1";
 
-const PRIVATE_KEY = "6b911fd37cdf5c81d4c0adb1ab7fa822ed253ab0ad9aa18d77257c88b29b718e";
-
-
-function hashMessage(message) {
-    const bytes = utf8ToBytes(message)
-    const hash = keccak256(bytes)
-
-    return hash
-}
-
-async function signMessage(msg) {
-  const hash = hashMessage(msg)
-  const signature = await secp.sign(hash, PRIVATE_KEY, {recovered: true});
-  
-  return signature
-}
-
-
-function Transfer({ address, setBalance }) {
+function Transfer({ privateKey, setBalance }) {
   const [sendAmount, setSendAmount] = useState("");
   const [recipient, setRecipient] = useState("");
-  const [privateKey, setPrivateKey] = useState("");
 
   const setValue = (setter) => (evt) => setter(evt.target.value);
 
   async function transfer(evt) {
     evt.preventDefault();
-    const signature = await signMessage(sendAmount);
-    
+
+    // Sign the send amount
+    const messageBytes = utf8ToBytes("sendAmount");
+    const hashedMessage = keccak256(messageBytes);
+    console.log('private key:', privateKey);
+    console.log('message bytes:', messageBytes);
+    console.log('hashed message:', hashedMessage);
+
+    try { 
+      const [signature, recoveryBit] = await secp.sign(hashedMessage, privateKey, {recovered: true});
+    } catch (err) {
+      alert(err)
+    }
 
     try {
       const {
         data: { balance },
       } = await server.post(`send`, {
-        sender: address,
+        signature: signature,
+        recoveryBit: recoveryBit,
+        hashedMessage: hashedMessage,
         amount: parseInt(sendAmount),
         recipient,
       });
@@ -56,15 +50,6 @@ function Transfer({ address, setBalance }) {
         Send Amount
         <input
           placeholder="1, 2, 3..."
-          value={privateKey}
-          onChange={setValue(setPrivateKey)}
-        ></input>
-      </label>
-
-      <label>
-        Private Key
-        <input
-          placeholder="Type in Private Key, for example: 0x1"
           value={sendAmount}
           onChange={setValue(setSendAmount)}
         ></input>
