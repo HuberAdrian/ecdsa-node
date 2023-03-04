@@ -39,7 +39,7 @@ function Transfer({ address, setBalance, privateKey }) {
       });
       setBalance(balance);
     } catch (ex) {
-      alert(ex.response.data.message);
+      alert(ex);
     }
   }
 

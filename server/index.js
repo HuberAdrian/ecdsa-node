@@ -6,7 +6,7 @@ const port = 3042;
 const secp = require("ethereum-cryptography/secp256k1");
 const { keccak256 } = require("ethereum-cryptography/keccak");
 
-app.use(cors());
+app.use(cors({origin: true}));
 app.use(express.json());
 
 const balances = {
