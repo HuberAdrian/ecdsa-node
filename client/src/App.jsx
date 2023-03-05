@@ -4,6 +4,7 @@ import Transfer from "./Transfer";
 import "./App.scss";
 import { useAddress } from "./utils";
 import { useCallback } from "react";
+import PrivateKeyChooser from "./PrivateKeyChooser";
 
 function App() {
   const [balance, setBalance] = useState(0);
@@ -31,6 +32,7 @@ function App() {
       ) : (
         <form className="container transfer" onSubmit={handleSubmit}>
           <input name="private_key" placeholder="Enter your private key" />
+          <PrivateKeyChooser onSelectPrivateKey={setPrivateKey} />
           <button className="button" type="submit">
             OK
           </button>
