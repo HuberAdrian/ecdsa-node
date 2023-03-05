@@ -1,21 +1,14 @@
-import { useState } from "react";
+import * as secp from "ethereum-cryptography/secp256k1";
+import { sha256 } from "ethereum-cryptography/sha256";
+import { toHex, utf8ToBytes } from "ethereum-cryptography/utils";
 import server from "./server";
 import * as secp from "ethereum-cryptography/secp256k1"
 import { keccak256 } from "ethereum-cryptography/keccak";
 import { toHex, utf8ToBytes } from "ethereum-cryptography/utils";
 
-function Transfer({ address, setBalance, privateKey }) {
-  const [sendAmount, setSendAmount] = useState("");
-  const [recipient, setRecipient] = useState("");
-  const [signature, setSignature] = useState("");
-  const [recoveryBit, setRecoveryBit] = useState("");
-
-  const setValue = (setter) => (evt) => setter(evt.target.value);
-  function hashMessage(message){
-    return toHex(keccak256(utf8ToBytes(message)));
-  }
-  async function transfer(evt) {
-    evt.preventDefault();
+function Transfer({ privateKey, setBalance }) {
+  async function handleSubmit(event) {
+    event.preventDefault();
 
     const message = {
       address, sendAmount, recipient,
@@ -30,47 +23,51 @@ function Transfer({ address, setBalance, privateKey }) {
     console.log('request:', message);
 
     try {
+      const data = {
+        amount: parseInt(event.target.amount.value),
+        recipient: event.target.recipient.value,
+      };
+      const hash = sha256(utf8ToBytes(`${data.recipient}${data.amount}`));
+      const [signature, recovery] = await secp.sign(hash, privateKey, {
+        recovered: true,
+      });
       const {
         data: { balance },
       } = await server.post(`send`, {
-        sender: address,
-        amount: parseInt(sendAmount),
-        recipient,
+        ...data,
+        signature: toHex(signature),
+        recovery,
       });
       setBalance(balance);
-    } catch (ex) {
-      alert(ex);
+    } catch (e) {
+      if (e?.response?.data?.message) {
+        alert(e.response.data.message);
+      } else {
+        console.error(e);
+      }
     }
   }
 
   return (
-    <form className="container transfer" onSubmit={transfer}>
+    <form className="container transfer" onSubmit={handleSubmit}>
       <h1>Send Transaction</h1>
 
       <label>
         Send Amount
-        <input
-          placeholder="1, 2, 3..."
-          value={sendAmount}
-          onChange={setValue(setSendAmount)}
-        ></input>
+        <input name="amount" placeholder="1, 2, 3..."></input>
       </label>
 
       <label>
         Recipient
         <input
+          name="recipient"
           placeholder="Type an address, for example: 0x2"
-          value={recipient}
-          onChange={setValue(setRecipient)}
         ></input>
       </label>
-      <div>
-        Signature: {signature}
-      </div>
-      <div>
-        Recovery Bit: {recoveryBit}
-      </div>
-      <input type="submit" className="button" value="Transfer" />
+
+      <button type="submit" className="button">
+        Submit
+      </button>
     </form>
   );
 }
